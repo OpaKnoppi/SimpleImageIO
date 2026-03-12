@@ -148,11 +148,35 @@ export class ImageContainer extends React.Component<ImageContainerProps, ImageCo
         let paddingX = magnifierPadding;
         let paddingY = magnifierPadding;
 
+        // Position of mouse inside Flipbook
         let posX = event.pageX - this.container.current.getBoundingClientRect().x;
         let posY = event.pageY - this.container.current.getBoundingClientRect().y - window.scrollY;
 
         let offsetX = 0;
         let offsetY = 0;
+
+        // If the Flipbook is too small so that the maginifier cannot find its ideal position -> position the magnifier to its least occluded option
+        let flagDefaultXPositionBestOption = false;
+        let flagDefaultYPositionBestOption = false;
+        {
+            let rightOption = flipSizeX - posX;
+            rightOption -= (paddingX + magnifierSizeX);
+
+            let leftOption = posX;
+            leftOption -= (paddingX + magnifierSizeX);
+
+            if(leftOption < rightOption)
+                flagDefaultXPositionBestOption = true;
+
+            let downOption = flipSizeY - posY;
+            downOption -= (paddingY + magnifierSizeY);
+
+            let upOption = posY;
+            upOption -= (paddingY + magnifierSizeY);
+
+            if(upOption < downOption)
+                flagDefaultYPositionBestOption = true;
+        }
 
         if (!this.state.flagXSwapped) {
             offsetX = 0;
@@ -160,8 +184,9 @@ export class ImageContainer extends React.Component<ImageContainerProps, ImageCo
 
             tmpX -= (paddingX + magnifierSizeX);
             tmpX = Math.min(tmpX, 0);
-
-            if (tmpX < 0) {
+            
+            // If current default pos of magnifier would be at all occluded && if default pos would not be less occluded than other option
+            if (tmpX < 0 && !flagDefaultXPositionBestOption) {
                 offsetX = -(magnifierSizeX + 2 * paddingX);
 
                 this.setState({
@@ -176,7 +201,8 @@ export class ImageContainer extends React.Component<ImageContainerProps, ImageCo
             let tmpX = posX - (paddingX + magnifierSizeX);
             tmpX = Math.min(tmpX, 0);
 
-            if (tmpX < 0) {
+            // If current pos of magnifier would be occluded at all && if default pos would be less occluded than other option
+            if (tmpX < 0 && flagDefaultXPositionBestOption) {
                 offsetX = 0
                 this.setState({
                     flagXSwapped: false,
@@ -192,7 +218,8 @@ export class ImageContainer extends React.Component<ImageContainerProps, ImageCo
             tmpY -= (paddingY + magnifierSizeY);
             tmpY = Math.min(tmpY, 0);
 
-            if (tmpY < 0) {
+            // If current default pos of magnifier would be occluded at all && if default pos would not be less occluded than other option
+            if (tmpY < 0 && !flagDefaultYPositionBestOption) {
                 offsetY = -(magnifierSizeY + 2 * paddingY + 10);
                 this.setState({
                     flagYSwapped: true,
@@ -206,7 +233,8 @@ export class ImageContainer extends React.Component<ImageContainerProps, ImageCo
             let tmpY = posY - (paddingY + magnifierSizeY);
             tmpY = Math.min(tmpY, 0);
 
-            if (tmpY < 0) {
+            // If current pos of magnifier would be occluded at all && if default pos would be less occluded than other option
+            if (tmpY < 0 && flagDefaultYPositionBestOption) {
                 offsetY = 0
                 this.setState({
                     flagYSwapped: false,
