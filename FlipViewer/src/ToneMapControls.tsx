@@ -10,6 +10,7 @@ export interface ToneMapControlsProps {
     initialTMOOverrides: ToneMapSettings[];
     hidden: boolean;
     selectedIdx: number;
+    onStateChange?: (state: ToneMapSettings) => void;
 }
 
 export interface ToneMapControlsState {
@@ -135,7 +136,8 @@ export class ToneMapControls extends React.Component<ToneMapControlsProps, ToneM
                             value={state.exposure}
                             onChange={(evt) => {
                                 state.exposure = evt.target.value;
-                                this.setState({ }, this.apply);
+                                // this.setState({ }, this.apply);
+                                this.setState({ }, () => {this.apply; this.props.onStateChange(state)})
                             }}
                             onKeyDown={(evt) => evt.stopPropagation()}
                         />
@@ -152,7 +154,8 @@ export class ToneMapControls extends React.Component<ToneMapControlsProps, ToneM
                         <input type="checkbox" checked={state.useLog} name="logscale"
                             onChange={(evt) => {
                                 state.useLog = evt.target.checked;
-                                this.setState({ }, this.apply)
+                                // this.setState({ }, this.apply)
+                                this.setState({ }, () => {this.apply; this.props.onStateChange(state)})
                             }}
                         />
                         log
@@ -162,7 +165,8 @@ export class ToneMapControls extends React.Component<ToneMapControlsProps, ToneM
                         <input type="number" className={styles.numberInput} value={state.min} name="min" step="0.1"
                             onChange={(evt) => {
                                 state.min = evt.target.value;
-                                this.setState({ }, this.apply)
+                                // this.setState({ }, this.apply)
+                                this.setState({ }, () => {this.apply; this.props.onStateChange(state)})
                             }}
                             onKeyDown={(evt) => evt.stopPropagation()}
                         />
@@ -171,7 +175,8 @@ export class ToneMapControls extends React.Component<ToneMapControlsProps, ToneM
                         <input type="number" className={styles.numberInput} value={state.max} name="max" step="0.1"
                             onChange={(evt) => {
                                 state.max = evt.target.value;
-                                this.setState({ }, this.apply)
+                                // this.setState({ }, this.apply)
+                                this.setState({ }, () => {this.apply; this.props.onStateChange(state)})
                             }}
                             onKeyDown={(evt) => evt.stopPropagation()}
                         />
@@ -188,7 +193,7 @@ export class ToneMapControls extends React.Component<ToneMapControlsProps, ToneM
                         value={state.script}
                         onChange={(evt) => {
                             state.script = evt.target.value;
-                            this.setState({ }, this.apply)
+                            this.setState({ }, () => {this.apply; this.props.onStateChange(state)})
                         }}
                         onKeyDown={(evt) => {
                             evt.stopPropagation();
@@ -218,7 +223,8 @@ export class ToneMapControls extends React.Component<ToneMapControlsProps, ToneM
                         className={styles.tmoSelectBtn + (state.activeTMO == ToneMapType.Exposure ? activeCls : "")}
                         onClick={() => {
                             state.activeTMO = ToneMapType.Exposure;
-                            this.setState({}, this.apply)
+                            // this.setState({}, this.apply)
+                            this.setState({ }, () => {this.apply; this.props.onStateChange(state)})
                         }}
                     >
                         Exposure
@@ -227,7 +233,8 @@ export class ToneMapControls extends React.Component<ToneMapControlsProps, ToneM
                         className={styles.tmoSelectBtn + (state.activeTMO == ToneMapType.FalseColor ? activeCls : "")}
                         onClick={() => {
                             state.activeTMO = ToneMapType.FalseColor;
-                            this.setState({}, this.apply)
+                            // this.setState({}, this.apply)
+                            this.setState({ }, () => {this.apply; this.props.onStateChange(state)})
                         }}
                     >
                         False color
@@ -236,7 +243,8 @@ export class ToneMapControls extends React.Component<ToneMapControlsProps, ToneM
                         className={styles.tmoSelectBtn + (state.activeTMO == ToneMapType.Script ? activeCls : "")}
                         onClick={() => {
                             state.activeTMO = ToneMapType.Script;
-                            this.setState({}, this.apply)
+                            // this.setState({}, this.apply)
+                            this.setState({ }, () => {this.apply; this.props.onStateChange(state)})
                         }}
                     >
                         GLSL
@@ -245,7 +253,8 @@ export class ToneMapControls extends React.Component<ToneMapControlsProps, ToneM
                         <input type="checkbox" checked={this.state.soloMode[this.props.selectedIdx]} name="solomode"
                             onChange={(evt) => {
                                 this.state.soloMode[this.props.selectedIdx] = evt.target.checked;
-                                this.setState({ }, this.apply)
+                                // this.setState({ }, this.apply)
+                                this.setState({ }, () => {this.apply; this.props.onStateChange(state)})
                             }}
                         />
                         override for this image

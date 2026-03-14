@@ -8,30 +8,31 @@ import { MethodList } from './MethodList';
 import { Tools } from './Tools';
 import { Popup } from './Popup';
 import { ToneMapSettings, ZoomLevel } from './flipviewer';
+import { FlipBookGroup } from './FlipBookGroup';
 
 const UPDATE_INTERVAL_MS = 100;
 
 // Registry to update flipbooks
-export type BookRef = React.RefObject<FlipBook>;
-const registry = new Map<string, Set<BookRef>>();
+// export type BookRef = React.RefObject<FlipBook>;
+// const registry = new Map<string, Set<BookRef>>();
 
-export function getBooks(id: string): BookRef[] {
-    return Array.from(registry.get(id) ?? new Set());
-}
+// export function getBooks(id: string): BookRef[] {
+//     return Array.from(registry.get(id) ?? new Set());
+// }
 
-export function registerBook(id: string, ref: BookRef) {
-    if (!id) return;
-    const set = registry.get(id) ?? new Set<BookRef>();
-    set.add(ref);
-    registry.set(id, set);
-}
+// export function registerBook(id: string, ref: BookRef) {
+//     if (!id) return;
+//     const set = registry.get(id) ?? new Set<BookRef>();
+//     set.add(ref);
+//     registry.set(id, set);
+// }
 
-export function unregisterBook(id: string, ref: BookRef) {
-    const set = registry.get(id);
-    if (!set) return;
-    set.delete(ref);
-    if (set.size === 0) registry.delete(id);
-}
+// export function unregisterBook(id: string, ref: BookRef) {
+//     const set = registry.get(id);
+//     if (!set) return;
+//     set.delete(ref);
+//     if (set.size === 0) registry.delete(id);
+// }
 
 // Keep track of pressed keys
 // Idea is to only fire events if state of key changes
@@ -72,32 +73,6 @@ export class ToneMappingImage {
     }
 }
 
-
-type SelectUpdateFn = (groupName: string, newIdx: number) => void;
-var selectUpdateListeners: SelectUpdateFn[] = [];
-
-
-type TMOUpdateFn = (groupName: string, newTMOSettings: ToneMapSettings) => void;
-var tmoUpdateListeners: TMOUpdateFn[] = [];
-
-type imageConStateUpdateFn = (groupName: string, newImgConState: ImageContainerState) => void;
-var imgConStateUpdateListeners: imageConStateUpdateFn[] = [];
-
-export function SetGroupIndex(groupName: string, newIdx: number) {
-    for (let fn of selectUpdateListeners)
-        fn(groupName, newIdx);
-}
-
-export function SetGroupTMOSettings(groupName: string, newTMOSettings: ToneMapSettings) {
-    for (let fn of tmoUpdateListeners)
-        fn(groupName, newTMOSettings);
-}
-
-export function SetGroupImageContainerSettings(groupName: string, newImgConState: ImageContainerState) {
-    for (let fn of imgConStateUpdateListeners)
-        fn(groupName, newImgConState);
-}
-
 export interface FlipProps {
     names: string[];
     width: number;
@@ -114,6 +89,7 @@ export interface FlipProps {
     onMouseOver?: OnMouseOverHandler;
     onKeyImageContainer?: OnKeyHandler;
     groupName?: string;
+    flipGroup?: FlipBookGroup;
     hideTools: boolean;
     idStr: string;
 }
@@ -144,8 +120,8 @@ export class FlipBook extends React.Component<FlipProps, FlipState> {
 
         this.onKeyDown = this.onKeyDown.bind(this);
         this.onKeyUp = this.onKeyUp.bind(this);
-        this.onSelectUpdate = this.onSelectUpdate.bind(this);
-        this.onTMOUpdate = this.onTMOUpdate.bind(this);
+        // this.onSelectUpdate = this.onSelectUpdate.bind(this);
+        // this.onTMOUpdate = this.onTMOUpdate.bind(this);
     }
 
     onKeyUp(evt: React.KeyboardEvent<HTMLDivElement>) {
@@ -265,12 +241,13 @@ export class FlipBook extends React.Component<FlipProps, FlipState> {
         }
 
         if (evt.key === "t") {
-            this.setState({ hideTools: !this.state.hideTools });
+            // changes state and calls back to other flipbooks in group as soon as react changed the state of this flipbook
+            this.setState({ hideTools: !this.state.hideTools }, () => {if(this.props.flipGroup) this.props.flipGroup.UpdateGroupFlipBookStateChange(this.state)});
             evt.stopPropagation();
         }
 
         if (needTMOUpdate)
-            this.updateTMOSettings(this.tmoCtrls.current.state.globalSettings);
+            this.props.flipGroup.UpdateGroupTMOSettings(this.tmoCtrls.current.state.globalSettings);
     }
 
     reset() {
@@ -356,15 +333,23 @@ export class FlipBook extends React.Component<FlipProps, FlipState> {
     }
 
     updateSelection(newIdx: number) {
-        if (this.props.groupName) SetGroupIndex(this.props.groupName, newIdx);
-        else this.setState({ selectedIdx: newIdx });
+        this.setState({selectedIdx: newIdx}, () => {if(this.props.flipGroup) this.props.flipGroup.UpdateGroupFlipBookStateChange(this.state)});
+        // if (this.props.groupName) SetGroupIndex(this.props.groupName, newIdx);
+
+        // this.setState({selectedIdx: newIdx}, () => {console.log("state index",this.state.selectedIdx)});
+        // console.log("new index",newIdx);
+        // console.log("state index",this.state.selectedIdx);
+        // this.setState({ selectedIdx: newIdx });
+
+        // if (this.props.flipGroup) this.props.flipGroup.UpdateGroupFlipBookStateChange(this.state);
+        // else this.setState({ selectedIdx: newIdx });
     }
 
-    updateTMOSettings(newTMOSettings: ToneMapSettings) {
-        if (this.props.groupName) SetGroupTMOSettings(this.props.groupName, newTMOSettings);
-        else this.tmoCtrls.current.applySettings(newTMOSettings);
+    // updateTMOSettings(newTMOSettings: ToneMapSettings) {
+    //     if (this.props.groupName) SetGroupTMOSettings(this.props.groupName, newTMOSettings);
+    //     else this.tmoCtrls.current.applySettings(newTMOSettings);
 
-    }
+    // }
 
     render(): React.ReactNode {
         let popup = null;
@@ -397,7 +382,7 @@ export class FlipBook extends React.Component<FlipProps, FlipState> {
                         onClick={this.props.onClick}
                         onWheel={this.props.onWheel}
                         onMouseOver={this.props.onMouseOver}
-                        onStateChange={(st) => this.onImageContainerUpdate(st)}
+                        onStateChange={(st) => this.props.flipGroup.UpdateGroupImageContainerSettings(st)}
                     >
                         {popup}
                         <button className={styles.toolsBtn}
@@ -423,58 +408,59 @@ export class FlipBook extends React.Component<FlipProps, FlipState> {
                     initialTMOOverrides={this.props.initialTMOOverrides}
                     hidden={this.state.hideTools}
                     selectedIdx={this.state.selectedIdx}
+                    onStateChange={(st) => this.props.flipGroup.UpdateGroupTMOSettings(st)}
                 />
             </div>
         )
     }
 
-    onSelectUpdate(groupName: string, newIdx: number) {
-        if (groupName == this.props.groupName) {
-            newIdx = Math.min(this.props.rawPixels.length - 1, Math.max(0, newIdx));
-            this.setState({ selectedIdx: newIdx });
-        }
-    }
+    // onSelectUpdate(groupName: string, newIdx: number) {
+    //     if (groupName == this.props.groupName) {
+    //         newIdx = Math.min(this.props.rawPixels.length - 1, Math.max(0, newIdx));
+    //         this.setState({ selectedIdx: newIdx });
+    //     }
+    // }
 
-    onTMOUpdate(groupName: string, newTMOSettings: ToneMapSettings) {
-        if (groupName == this.props.groupName) {
-            this.tmoCtrls.current.applySettings(newTMOSettings);
-        }
-    }
+    // onTMOUpdate(groupName: string, newTMOSettings: ToneMapSettings) {
+    //     if (groupName == this.props.groupName) {
+    //         this.tmoCtrls.current.applySettings(newTMOSettings);
+    //     }
+    // }
 
-    // is called when onStateIsChanged in ImageContainer is called
-    // everytime when the ImageContainerState changes (pos, zoom, etc.)
-    // calls onImageContainerGroupUpdate = ()
-    onImageContainerUpdate(newImageContainerState: ImageContainerState) {
-        if (this.props.groupName) {
-            SetGroupImageContainerSettings(this.props.groupName, newImageContainerState);
-        }
-    }
+    // // is called when onStateIsChanged in ImageContainer is called
+    // // everytime when the ImageContainerState changes (pos, zoom, etc.)
+    // // calls onImageContainerGroupUpdate = ()
+    // onImageContainerUpdate(newImageContainerState: ImageContainerState) {
+    //     if (this.props.groupName) {
+    //         // SetGroupImageContainerSettings(this.props.groupName, newImageContainerState);
+    //     }
+    // }
 
-    // is called when other flipbook's ImageContainerStates changes
-    onImageContainerGroupUpdate = (groupName: string, newImageContainerState: ImageContainerState) => {
-        if (groupName === this.props.groupName && this.imageContainer.current) {
-            this.imageContainer.current.setState(newImageContainerState);
-        }
-    }
+    // // is called when other flipbook's ImageContainerStates changes
+    // onImageContainerGroupUpdate = (groupName: string, newImageContainerState: ImageContainerState) => {
+    //     if (groupName === this.props.groupName && this.imageContainer.current) {
+    //         this.imageContainer.current.setState(newImageContainerState);
+    //     }
+    // }
 
     componentDidMount(): void {
         if (this.props.initialZoom)
             this.imageContainer.current.setZoom(this.props.initialZoom);
 
-        selectUpdateListeners.push(this.onSelectUpdate);
-        tmoUpdateListeners.push(this.onTMOUpdate);
-        imgConStateUpdateListeners.push(this.onImageContainerGroupUpdate);
+        // selectUpdateListeners.push(this.onSelectUpdate);
+        // tmoUpdateListeners.push(this.onTMOUpdate);
+        // imgConStateUpdateListeners.push(this.onImageContainerGroupUpdate);
     }
 
     componentWillUnmount(): void {
-        let idx = selectUpdateListeners.findIndex(v => v === this.onSelectUpdate);
-        selectUpdateListeners.splice(idx, 1);
+        // let idx = selectUpdateListeners.findIndex(v => v === this.onSelectUpdate);
+        // selectUpdateListeners.splice(idx, 1);
 
-        idx = tmoUpdateListeners.findIndex(v => v === this.onTMOUpdate);
-        tmoUpdateListeners.splice(idx, 1);
+        // idx = tmoUpdateListeners.findIndex(v => v === this.onTMOUpdate);
+        // tmoUpdateListeners.splice(idx, 1);
 
-        idx = imgConStateUpdateListeners.findIndex(v => v === this.onImageContainerGroupUpdate);
-        imgConStateUpdateListeners.splice(idx, 1);
+        // idx = imgConStateUpdateListeners.findIndex(v => v === this.onImageContainerGroupUpdate);
+        // imgConStateUpdateListeners.splice(idx, 1);
     }
 
     connect(other: React.RefObject<FlipBook>) {
@@ -553,7 +539,7 @@ export type FlipBookParams = {
     id: string,
 }
 
-export function AddFlipBook(params: FlipBookParams, groupName?: string) {
+export function AddFlipBook(params: FlipBookParams, groupName?: string, flipBookGroup?: FlipBookGroup) {
     let rawPixels = GetImageData(params.images);
     let means: number[] = [];
     for (let img of rawPixels) {
@@ -583,10 +569,10 @@ export function AddFlipBook(params: FlipBookParams, groupName?: string) {
     let themeStyle = colorThemes[params.colorTheme ?? "dark"];
 
     const root = createRoot(params.parentElement);
-    const bookRef = createRef<FlipBook>();
+    const flipBookRef = React.createRef<FlipBook>();
     root.render(
         <FlipBook
-            ref={bookRef}
+            ref={(instance) => {if(instance) flipBookGroup.addFlipBook(instance); }}
             names={params.names}
             width={params.width}
             height={params.height}
@@ -602,18 +588,21 @@ export function AddFlipBook(params: FlipBookParams, groupName?: string) {
             onKeyImageContainer={params.onKeyImageContainer}
             style={themeStyle}
             groupName={groupName}
+            flipGroup={flipBookGroup}
             hideTools={params.hideTools}
             idStr={params.id}
         />
     );
 
-    if (params.id)
-        registerBook(params.id, bookRef);
+    // flipBookGroup.addFlipBook(flipBookRef);
 
-    new MutationObserver(_ => {
-        if (!document.body.contains(params.parentElement)) {
-            unregisterBook(params.id, bookRef);
-            root.unmount();
-        }
-    }).observe(document.body, { childList: true, subtree: true });
+    // if (params.id)
+    //     registerBook(params.id, flipBookRef);
+
+    // new MutationObserver(_ => {
+    //     if (!document.body.contains(params.parentElement)) {
+    //         unregisterBook(params.id, flipBookRef);
+    //         root.unmount();
+    //     }
+    // }).observe(document.body, { childList: true, subtree: true });
 }

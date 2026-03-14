@@ -1,4 +1,5 @@
-import { AddFlipBook, getBooks, SetGroupIndex } from "./FlipBook";
+import { AddFlipBook } from "./FlipBook";
+import { FlipBookGroup, FlipBookGroups } from "./FlipBookGroup";
 import { OnClickHandler, OnKeyHandler, OnMouseOverHandler, OnWheelHandler } from "./ImageContainer";
 
 async function readRGBE(url: string) {
@@ -124,6 +125,13 @@ export async function MakeFlipBook(data: FlipData | string, onClick?: OnClickHan
     }
     let values = await Promise.all(work);
 
+    let flipBookGroup = FlipBookGroups.get(data.groupName);
+    if(!flipBookGroup && data.groupName)
+    {   
+        flipBookGroup = new FlipBookGroup(data.groupName);
+        FlipBookGroups.set(data.groupName, flipBookGroup);
+    }
+
     return AddFlipBook({
         parentElement: document.getElementById(data.containerId),
         names: data.names,
@@ -141,15 +149,11 @@ export async function MakeFlipBook(data: FlipData | string, onClick?: OnClickHan
         hideTools: data.hideTools,
         containerId: data.containerId,
         id: data.id,
-    }, data.groupName);
+    }, data.groupName, flipBookGroup);
 }
 
 export async function UpdateImage(data: FlipData | string) {
     data = AsFlipData(data);
-
-    let book = getBooks(data.id)[0].current;
-    if(!book)
-        return;
 
     let work: Promise<Float32Array | ImageData>[] = [];
     for (let i = 0; i < data.dataUrls.length; ++i) {
@@ -166,10 +170,15 @@ export async function UpdateImage(data: FlipData | string) {
     }
     let images = await Promise.all(work);
 
-    const tms = book.props.toneMappers;
-    tms[book.state.selectedIdx].setPixels(images[0]);
-}
-
-export function UpdateFlipGroupSelection(groupName: string, newIdx: number) {
-    SetGroupIndex(groupName, newIdx);
+    // Find flipbook in group with given ID
+    let indexFlipbook = data.id;
+    let flipbookGroup = FlipBookGroups.get(data.groupName)
+    for(let i in flipbookGroup.flipbooks)
+    {
+        if(flipbookGroup.flipbooks[i].props.idStr == indexFlipbook)
+        {
+            let selectedIndex = flipbookGroup.flipbookGroupState.selectedIdx;
+            flipbookGroup.flipbooks[i].props.toneMappers[selectedIndex].setPixels(images[0]);
+        }
+    }
 }
