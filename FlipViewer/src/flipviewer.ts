@@ -80,6 +80,7 @@ export type FlipData = {
     initialTMOOverrides: ToneMapSettings[]
     containerId: string;
     id: string;
+    selectedIndex: number;
     colorTheme?: string;
     groupName?: string;
     hideTools: boolean;
@@ -178,6 +179,8 @@ export async function UpdateImage(data: FlipData | string) {
         if(flipbookGroup.flipbooks[i].props.idStr == indexFlipbook)
         {
             let selectedIndex = flipbookGroup.flipbookGroupState.selectedIdx;
+            if(data.selectedIndex != -1)
+                selectedIndex = data.selectedIndex;
             flipbookGroup.flipbooks[i].props.toneMappers[selectedIndex].setPixels(images[0]);
         }
     }

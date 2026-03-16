@@ -449,7 +449,7 @@ public class FlipBook
         return code.Html + $"<script>{code.ScriptFn}({code.Data});</script>";
     }
 
-    private GeneratedCode GenerateInternal(int? index)
+    private GeneratedCode GenerateInternal(int? index, int selectedFlipbookIndex = -1)
     {
         if (images.Count == 0)
             throw new InvalidOperationException("No images in the flip book");
@@ -527,6 +527,7 @@ public class FlipBook
                 "height": {{height}},
                 "containerId": "{{containerId}}",
                 "id": {{JsonSerializer.Serialize(ID)}},
+                "selectedIndex": {{selectedFlipbookIndex}},
                 "initialZoom": {{initialZoom.ToString()}},
                 "initialTMO": {{initialTMOStr}},
                 "initialTMOOverrides": [
@@ -562,6 +563,12 @@ public class FlipBook
     {
         images[index] = images[index] with { Image = newImage };
         return GenerateInternal(index);
+    }
+
+    public GeneratedCode ReplaceImage(Image newImage, int index, int selectedFlipbookIndex)
+    {
+        images[index] = images[index] with { Image = newImage };
+        return GenerateInternal(index, selectedFlipbookIndex);
     }
 
     /// <summary>
